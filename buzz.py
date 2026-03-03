@@ -1,46 +1,46 @@
+import eventlet
+eventlet.monkey_patch()  # ضروري جداً أن يكون السطر رقم 1 ليعمل البث المباشر
+
 from flask import Flask, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
 import os
 
 # اسم التطبيق 'buzz'
 buzz = Flask(__name__)
-socketio = SocketIO(buzz)
+# أضفنا cors_allowed_origins="*" عشان يسمح بالاتصال من أي جوال
+socketio = SocketIO(buzz, cors_allowed_origins="*")
 
-# متغير عشان نحدد إذا فيه فائز ضغط قبلك
 winner_name = None
 
 @buzz.route('/')
 def index():
     return render_template('index.html')
 
-# التعديل هنا: نحدد المسار بدقة لملف الصوت
 @buzz.route('/buzz.MP3.mp3')
 def serve_audio():
-    # هنا نقول له: ابحث في مجلد templates عن ملف الصوت
-    # تأكد أن اسم الملف مطابق تماماً لما هو في جهازك
     return send_from_directory(os.path.join(buzz.root_path, 'templates'), 'buzz.MP3.mp3')
 
 @socketio.on('press_event')
 def handle_buzz(data):
     global winner_name
     
-    print("--- SUCCESS! ---")
+    # استلام اسم المتسابق من الجوال
+    player_name = data.get('name', 'شخص ما')
     
     if winner_name is None:
-        winner_name = "Osama" # وضعنا اسمك هنا للفوز!
-        print(f"WINNER: {winner_name}")
+        winner_name = player_name
+        print(f"الفائز هو: {winner_name}")
         emit('winner_announcement', {'winner': winner_name}, broadcast=True)
     else:
-        print("Someone already pressed!")
+        print(f"محاولة ضغط متأخرة من: {player_name}")
 
 @socketio.on('reset_game')
 def reset():
     global winner_name
     winner_name = None
-    print("Game Reset!")
+    print("تم إعادة ضبط اللعبة!")
     emit('game_restarted', broadcast=True)
 
 if __name__ == '__main__':
-    print("--- BUZZ Server is Starting ---")
-    # host='0.0.0.0' ضرورية جداً ليعمل على الآيفون
-    socketio.run(buzz, host='0.0.0.0', port=5000, debug=True)
+    # أزلنا port=5000 و host لأن السيرفر الرسمي هو من يحددهم
+    socketio.run(buzz)
