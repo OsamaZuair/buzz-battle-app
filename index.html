@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Buzz Battle</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { 
+            background-color: #2200b9; /* اللون الأزرق اللي تحبه */
+            color: white; 
+            text-align: center; 
+            font-family: sans-serif; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #buzz-button {
+            width: 250px; height: 250px; 
+            border-radius: 50%; border: none; 
+            background-color: #ff0000; /* الزر الأحمر */
+            color: white; 
+            font-size: 40px; cursor: pointer; font-weight: bold; 
+            box-shadow: 0 15px #990000; transition: 0.1s;
+        }
+        #buzz-button:active {
+            box-shadow: 0 5px #660000;
+            transform: translateY(10px);
+        }
+        #buzz-button:disabled {
+            background-color: #555 !important;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="status-text">PRESS THE BUZZER!</h1>
+    
+    <audio id="buzz-sound">
+        <source src="/buzz.MP3.mp3" type="audio/mpeg">
+    </audio>
+
+    <button id="buzz-button">PRESS</button>
+     
+    <script>
+        var socket = io();
+        var btn = document.getElementById('buzz-button');
+        var sound = document.getElementById('buzz-sound');
+        var status = document.getElementById('status-text');
+
+        btn.onclick = function() {
+            // تشغيل الصوت عندك فوراً
+            if(sound) {
+                sound.currentTime = 0;
+                sound.play();
+            }
+            // إرسال الإشارة للسيرفر
+            socket.emit('press_event', {data: 'pressed'});
+        };
+
+        // استقبال أمر "البث" من السيرفر لكل الجوالات
+        socket.on('announce_winner', function(data) {
+            status.innerHTML = data.msg; // يغير النص عند الكل
+            status.style.color = "yellow";
+            btn.disabled = true; // يعطل الزر عند الكل
+        });
+    </script>
+</body>
+</html>
